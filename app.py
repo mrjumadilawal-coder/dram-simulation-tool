@@ -4,6 +4,7 @@ from utils.cookie_manager import get_cookie_manager
 from services.visitor_service import get_unique_visitor_count
 from services.simulation import run_simulation
 from components.chart import plot_simulation
+from services.visitor_service import get_country_stats
 
 # ============================================
 # CONFIG
@@ -24,13 +25,12 @@ if cookies is None:
 # ============================================
 
 visitor_count = get_unique_visitor_count(cookies)
-
+country_stats = get_country_stats()
 # ============================================
 # UI
 # ============================================
 
 st.title("📊 DRAM Simulation Dashboard")
-st.metric("👥 Total Visit Hari Ini", visitor_count)
 
 st.markdown("""
 Simulation of the **Dynamic Misalignment Mechanism of Regulatory Fatigue (DRAM)**.
@@ -67,9 +67,16 @@ with col1:
     fig = plot_simulation(df)
     st.pyplot(fig)
 
+
+
 with col2:
+    st.metric("👥 Total Visit Hari Ini", visitor_count)
+    st.subheader("🌍 Visitor by Country")
+    st.bar_chart(country_stats)
     st.subheader("Data Table")
     st.dataframe(df)
+
+print(country_stats)
 
 # ============================================
 # DOWNLOAD
