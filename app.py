@@ -1,16 +1,34 @@
 import streamlit as st
+import pandas as pd
+import plotly.express as px
 
 from utils.cookie_manager import get_cookie_manager
-from services.visitor_service import get_unique_visitor_count
+from services.visitor_service import get_unique_visitor_count, get_country_stats
 from services.simulation import run_simulation
-from components.chart import plot_simulation
-from services.visitor_service import get_country_stats
 
 # ============================================
 # CONFIG
 # ============================================
 
-st.set_page_config(page_title="DRAM Simulation Tool", layout="wide")
+st.set_page_config(
+    page_title="DRAM Simulation Dashboard",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# ============================================
+# GLOBAL STYLE (BIAR CLEAN & CENTERED)
+# ============================================
+
+st.markdown("""
+<style>
+.block-container {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+    max-width: 1400px;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # ============================================
 # COOKIE INIT
@@ -21,26 +39,26 @@ if cookies is None:
     st.stop()
 
 # ============================================
-# VISITOR
+# VISITOR DATA
 # ============================================
 
 visitor_count = get_unique_visitor_count(cookies)
 country_stats = get_country_stats()
+
 # ============================================
-# UI
+# HEADER
 # ============================================
 
 st.title("📊 DRAM Simulation Dashboard")
+st.caption("Dynamic Misalignment Mechanism of Regulatory Fatigue")
 
-st.markdown("""
-Simulation of the **Dynamic Misalignment Mechanism of Regulatory Fatigue (DRAM)**.
-""")
+st.divider()
 
 # ============================================
 # SIDEBAR
 # ============================================
 
-st.sidebar.header("Simulation Parameters")
+st.sidebar.header("⚙️ Simulation Parameters")
 
 initial_id = st.sidebar.number_input("Initial ID", value=1.0)
 initial_ar = st.sidebar.number_input("Initial AR", value=0.8)
@@ -51,32 +69,109 @@ delta = st.sidebar.slider("Constraint (Δ)", -0.2, 0.0, -0.05)
 iterations = st.sidebar.number_input("Iterations", 5, 200, 30)
 
 # ============================================
-# RUN
+# SIMULATION
 # ============================================
 
 df = run_simulation(initial_id, initial_ar, alpha, delta, iterations)
 
 # ============================================
-# LAYOUT
+# MAIN CHART (PLOTLY)
 # ============================================
 
-col1, col2 = st.columns([2, 1])
+fig_plotly = px.line(
+    df,
+    x="Iteration",
+    y=["ID", "AR", "Fatigue"],
+    markers=True
+)
 
-with col1:
-    st.subheader("Dynamics Trajectory")
-    fig = plot_simulation(df)
-    st.pyplot(fig)
+fig_plotly.update_layout(
+    template="plotly_dark",
+    hovermode="x unified",
+    height=500,
+    margin=dict(l=0, r=0, t=30, b=0)
+)
+
+# ============================================
+# MAIN GRID
+# ============================================
+
+col_main, col_side = st.columns([4, 1.5])
+
+# ============================================
+# LEFT (MAIN CHART)
+# ============================================
+
+with col_main:
+    st.markdown("### 📈 Dynamics Trajectory")
+    st.plotly_chart(fig_plotly, use_container_width=True)
+
+# ============================================
+# RIGHT (SIDE DASHBOARD)
+# ============================================
+
+with col_side:
+
+    # ===== VISITOR CARD =====
+    st.markdown("#### 👥 Visitors")
+
+    st.markdown(f"""
+    <div style="
+        background: linear-gradient(135deg, #0f172a, #1e293b);
+        padding:18px;
+        border-radius:14px;
+        text-align:center;
+        margin-bottom:15px;
+    ">
+        <h1 style="color:#22c55e; margin:0;">{visitor_count}</h1>
+        <span style="color:#94a3b8;">Today</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ===== COUNTRY CHART =====
+    st.markdown("#### 🌍 Country")
+
+    if country_stats:
+        df_country = pd.DataFrame(
+            list(country_stats.items()),
+            columns=["Country", "Visitors"]
+        )
+
+        fig_country = px.bar(
+            df_country,
+            x="Country",
+            y="Visitors",
+            text="Visitors",
+            color="Visitors",
+            color_continuous_scale="greens"
+        )
+
+        fig_country.update_layout(
+            template="plotly_dark",
+            height=220,
+            margin=dict(l=0, r=0, t=10, b=0),
+            coloraxis_showscale=False
+        )
+
+        st.plotly_chart(fig_country, use_container_width=True)
+
+    else:
+        st.info("No data")
 
 
+# ============================================
+# TABLE
+# ============================================
 
-with col2:
-    st.metric("👥 Total Visit Hari Ini", visitor_count)
-    st.subheader("🌍 Visitor by Country")
-    st.bar_chart(country_stats)
-    st.subheader("Data Table")
-    st.dataframe(df)
+st.divider()
 
-print(country_stats)
+st.markdown("### 📋 Simulation Data")
+
+st.dataframe(
+    df,
+    use_container_width=True,
+    height=320
+)
 
 # ============================================
 # DOWNLOAD
