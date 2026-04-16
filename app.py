@@ -113,7 +113,7 @@ with col_main:
 with col_side:
 
     # ===== VISITOR CARD =====
-    st.markdown("#### 👥 Visitors")
+    st.markdown("#### 👥 Visitors Todays")
 
     st.markdown(f"""
     <div style="
